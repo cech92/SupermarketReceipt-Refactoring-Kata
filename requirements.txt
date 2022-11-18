@@ -1,0 +1,11 @@
+# Tests
+approvaltests
+python-dateutil
+pytest-approvaltests
+coverage==6.5.0
+ddt==1.6.0
+
+# Code style
+black==22.10.0
+flake8==5.0.4
+isort==5.10.1
