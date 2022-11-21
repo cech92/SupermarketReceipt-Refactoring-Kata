@@ -1,5 +1,39 @@
 # The Supermarket Receipt Refactoring Kata
 
+## Description
+Requirements added:
+1. coverage
+2. ddt
+3. flake8
+4. isort
+5. black
+
+Install requirements: `pip install -r requirements.txt`
+
+Run tests: `coverage run -m unittest discover`
+
+View coverage: `coverage report -m`
+
+Results:
+---
+| Name                                                        | Stmts | Miss | Cover | Missing |
+|-------------------------------------------------------------|-------|------|-------|---------|
+| catalog.py                                                  | 5     | 2    | 60%   | 3, 6    |
+| models/__init__.py                                          | 0     | 0    | 100%  |         |
+| models/offers.py                                            | 53    | 0    | 100%  |         |
+| models/products.py                                          | 12    | 0    | 100%  |         |
+| receipt.py                                                  | 57    | 0    | 100%  |         |
+| shopping_cart.py                                            | 32    | 0    | 100%  |         |
+| teller.py                                                   | 28    | 0    | 100%  |         |
+| tests/__init__.py                                           | 0     | 0    | 100%  |         |
+| tests/fake_catalog.py                                       | 12    | 0    | 100%  |         |
+| tests/test_receipt.py                                       | 41    | 0    | 100%  |         |
+| tests/test_shopping_cart.py                                 | 29    | 0    | 100%  |         |
+| tests/test_supermarket.py                                   | 186   | 0    | 100%  |         |
+| TOTAL                                                       | 455   | 2    | 99%   |         |
+---
+
+
 This is a variation of a popular kata described in http://codekata.com/kata/kata01-supermarket-pricing/. The aim of the exercise is to build automated tests for this code, refactor it, and add a new feature. 
 
 The supermarket has a catalog with different types of products (rice, apples, milk, toothbrushes,...). Each product has a price, and the total price of the shopping cart is the total of all the prices of the items. You get a receipt that details the items you've bought, the total price and any discounts that were applied.
