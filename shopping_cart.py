@@ -1,7 +1,7 @@
 import typing
 
 from catalog import SupermarketCatalog
-from models.offers import Offer
+from models.offers import Bundle, Offer
 from models.products import Product, ProductQuantity
 from receipt import Receipt
 
@@ -32,10 +32,23 @@ class ShoppingCart:
             self._product_quantities[product] = quantity
 
     def handle_offers(
-        self, receipt: Receipt, offers: typing.Dict[Offer], catalog: SupermarketCatalog
+        self,
+        receipt: Receipt,
+        offers: typing.Dict[Product, Offer],
+        catalog: SupermarketCatalog,
     ) -> None:
         for p in self._product_quantities.keys():
-            quantity = self._product_quantities[p]
             if p in offers.keys():
-                offer = offers[p]
-                receipt.manage_offer(offer, quantity, catalog)
+                receipt.manage_offer(offers[p], self._product_quantities[p], catalog)
+
+    def handle_bundles(
+        self,
+        receipt: Receipt,
+        bundles: typing.Dict[Product, Bundle],
+        catalog: SupermarketCatalog,
+    ) -> None:
+        for p in self._product_quantities.keys():
+            if p in bundles.keys():
+                if p in [discount.product for discount in receipt.discounts]:
+                    continue
+                receipt.manage_bundle(bundles[p], self._product_quantities, catalog)

@@ -1,5 +1,7 @@
+import typing
+
 from catalog import SupermarketCatalog
-from models.offers import Discount, Offer, SpecialOfferType
+from models.offers import Bundle, Discount, Offer, SpecialOfferType
 from models.products import Product
 
 
@@ -34,6 +36,9 @@ class Receipt:
     def add_discount(self, discount: Discount) -> None:
         self._discounts.append(discount)
 
+    def add_discounts(self, discounts: list[Discount]) -> None:
+        self._discounts += discounts
+
     @property
     def items(self) -> list[ReceiptItem]:
         return self._items[:]
@@ -42,9 +47,11 @@ class Receipt:
     def discounts(self) -> list[Discount]:
         return self._discounts[:]
 
-    def manage_offer(self, offer: Offer, quantity: float, catalog: SupermarketCatalog):
+    def manage_offer(
+        self, offer: Offer, quantity: float, catalog: SupermarketCatalog
+    ) -> None:
         discount = None
-        if offer.offer_type == SpecialOfferType.THREE_FOR_TWO and quantity > 2:
+        if offer.offer_type == SpecialOfferType.THREE_FOR_TWO and quantity >= 3:
             discount = offer.three_per_due(quantity, catalog)
         if offer.offer_type == SpecialOfferType.TWO_FOR_AMOUNT and quantity >= 2:
             discount = offer.two_for_amount(quantity, catalog)
@@ -54,3 +61,26 @@ class Receipt:
             discount = offer.ten_percent(quantity, catalog)
         if discount:
             self.add_discount(discount)
+
+    def manage_bundle(
+        self,
+        bundle: Bundle,
+        product_quantities: typing.Dict[Product, int],
+        catalog: SupermarketCatalog,
+    ) -> None:
+        discounts = []
+        completed = True
+        for bundle_pq in bundle.product_quantities:
+            if (
+                bundle_pq.product in product_quantities.keys()
+                and bundle_pq.quantity <= product_quantities[bundle_pq.product]
+            ):
+                continue
+            completed = False
+            break
+
+        if completed:
+            if bundle.offer_type == SpecialOfferType.TEN_PERCENT_DISCOUNT:
+                discounts = bundle.ten_percent(product_quantities, catalog)
+
+        self.add_discounts(discounts)

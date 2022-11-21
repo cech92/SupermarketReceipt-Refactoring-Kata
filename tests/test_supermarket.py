@@ -3,7 +3,7 @@ import unittest
 import ddt
 
 from models.offers import SpecialOfferType
-from models.products import Product, ProductUnit
+from models.products import Product, ProductQuantity, ProductUnit
 from shopping_cart import ShoppingCart
 from teller import Teller
 from tests.fake_catalog import FakeCatalog
@@ -139,7 +139,7 @@ class SupermarketTestCase(unittest.TestCase):
         receipt_item = receipt.items[0]
         self.assertEqual(receipt_item.product, self.rice)
         self.assertEqual(receipt_item.price, self.rice_price)
-        self.assertAlmostEqual(receipt_item.total_price, 10 * self.rice_price)
+        self.assertAlmostEqual(receipt_item.total_price, quantity * self.rice_price)
         self.assertEqual(receipt_item.quantity, quantity)
 
     def test_ten_percent_discount_not_apply_different_product(self):
@@ -158,7 +158,7 @@ class SupermarketTestCase(unittest.TestCase):
         receipt_item = receipt.items[0]
         self.assertEqual(receipt_item.product, self.apples)
         self.assertEqual(receipt_item.price, self.apples_price)
-        self.assertAlmostEqual(receipt_item.total_price, 10 * self.apples_price)
+        self.assertAlmostEqual(receipt_item.total_price, quantity * self.apples_price)
         self.assertEqual(receipt_item.quantity, quantity)
 
     @ddt.data(5, 7, 10, 12)
@@ -222,3 +222,84 @@ class SupermarketTestCase(unittest.TestCase):
             receipt_item.total_price, quantity * self.cherry_tomatoes_price
         )
         self.assertEqual(receipt_item.quantity, quantity)
+
+    @ddt.data((2, 1), (3, 1), (4, 2), (4, 3))
+    def test_bundle_ten_percent_discount(self, quantities):
+        discount_percentage = 10
+
+        product_quantities = [
+            ProductQuantity(product=self.toothbrush, quantity=2),
+            ProductQuantity(product=self.toothpaste, quantity=1),
+        ]
+        self.teller.add_bundle_offer(
+            offer_type=SpecialOfferType.TEN_PERCENT_DISCOUNT,
+            product_quantities=product_quantities,
+            argument=discount_percentage,
+        )
+
+        self.shopping_cart.add_item_quantity(self.toothbrush, quantity=quantities[0])
+        self.shopping_cart.add_item_quantity(self.toothpaste, quantity=quantities[1])
+        receipt = self.teller.checks_out_articles_from(self.shopping_cart)
+
+        min_mult = min(quantities[0] // 2, quantities[1] // 1)
+
+        self.assertEqual(len(receipt.items), 2)
+        self.assertEqual(len(receipt.discounts), 2)
+
+        discounts = receipt.discounts
+        self.assertEqual(discounts[0].product, self.toothbrush)
+        self.assertEqual(discounts[0].description, f"{discount_percentage}% off")
+        self.assertAlmostEqual(
+            discounts[0].discount_amount,
+            -self.toothbrush_price * discount_percentage / 100 * min_mult * 2,
+        )
+        self.assertEqual(discounts[1].product, self.toothpaste)
+        self.assertEqual(discounts[1].description, f"{discount_percentage}% off")
+        self.assertAlmostEqual(
+            discounts[1].discount_amount,
+            -self.toothpaste_price * discount_percentage / 100 * min_mult * 1,
+        )
+
+        receipt_items = receipt.items
+        self.assertEqual(receipt_items[0].product, self.toothbrush)
+        self.assertEqual(receipt_items[0].price, self.toothbrush_price)
+        self.assertAlmostEqual(
+            receipt_items[0].total_price, quantities[0] * self.toothbrush_price
+        )
+        self.assertEqual(receipt_items[0].quantity, quantities[0])
+        self.assertEqual(receipt_items[1].product, self.toothpaste)
+        self.assertEqual(receipt_items[1].price, self.toothpaste_price)
+        self.assertAlmostEqual(
+            receipt_items[1].total_price, quantities[1] * self.toothpaste_price
+        )
+        self.assertEqual(receipt_items[1].quantity, quantities[1])
+
+    def test_bundle_ten_percent_discount_not_apply_incompleted(self):
+        discount_percentage = 10
+
+        product_quantities = [
+            ProductQuantity(product=self.toothbrush, quantity=2),
+            ProductQuantity(product=self.toothpaste, quantity=1),
+        ]
+        self.teller.add_bundle_offer(
+            offer_type=SpecialOfferType.TEN_PERCENT_DISCOUNT,
+            product_quantities=product_quantities,
+            argument=discount_percentage,
+        )
+
+        self.shopping_cart.add_item_quantity(self.toothbrush, quantity=1)
+        self.shopping_cart.add_item_quantity(self.toothpaste, quantity=1)
+        receipt = self.teller.checks_out_articles_from(self.shopping_cart)
+
+        self.assertEqual(len(receipt.items), 2)
+        self.assertEqual(len(receipt.discounts), 0)
+
+        receipt_items = receipt.items
+        self.assertEqual(receipt_items[0].product, self.toothbrush)
+        self.assertEqual(receipt_items[0].price, self.toothbrush_price)
+        self.assertAlmostEqual(receipt_items[0].total_price, 1 * self.toothbrush_price)
+        self.assertEqual(receipt_items[0].quantity, 1)
+        self.assertEqual(receipt_items[1].product, self.toothpaste)
+        self.assertEqual(receipt_items[1].price, self.toothpaste_price)
+        self.assertAlmostEqual(receipt_items[1].total_price, 1 * self.toothpaste_price)
+        self.assertEqual(receipt_items[1].quantity, 1)

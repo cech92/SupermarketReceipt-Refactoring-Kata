@@ -50,6 +50,26 @@ class ReceiptTestCase(unittest.TestCase):
             self.receipt.discounts[0].discount_amount, discount.discount_amount
         )
 
+    def test_add_discounts(self):
+        discounts = [
+            Discount(
+                product=self.apples, description="Test apples", discount_amount=-1.50
+            ),
+            Discount(
+                product=self.toothbrush,
+                description="Test toothbrush",
+                discount_amount=-0.50,
+            ),
+            Discount(product=self.rice, description="Test rice", discount_amount=-0.20),
+        ]
+        self.receipt.add_discounts(discounts)
+
+        self.assertEqual(len(self.receipt.discounts), 3)
+        self.assertEqual(self.receipt.discounts[0].product, self.apples)
+        self.assertEqual(
+            self.receipt.discounts[0].discount_amount, discounts[0].discount_amount
+        )
+
     def test_total_price(self):
         apples_quantity = 5
 
